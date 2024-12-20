@@ -1,0 +1,20 @@
+#!/bin/bash
+# Filename:      ${GRML_FAI_CONFIG}/scripts/GRMLBASE/00-zeha-custom-debs
+# Purpose:       install custom .deb packages
+# Authors:       grml-team (grml.org), (c) Chris Hofstaedtler <ch@grml.org>
+# Bug-Reports:   see http://grml.org/bugs/
+# License:       This file is licensed under the GPL v2 or any later version.
+################################################################################
+
+set -u
+set -e
+
+# shellcheck source=/dev/null
+. "$GRML_LIVE_CONFIG"
+
+cp -rv $TEMPLATE_DIRECTORY/debs "$target"/
+$ROOTCMD bash -c 'DEBIAN_FRONTEND=noninteractive apt install -o Dpkg::Options::="--force-confnew" -y /debs/*deb'
+rm -r "$target"/debs/
+
+## END OF FILE #################################################################
+# vim:ft=sh expandtab ai tw=80 tabstop=4 shiftwidth=2
