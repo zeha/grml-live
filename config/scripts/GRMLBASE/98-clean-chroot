@@ -19,6 +19,10 @@ fi
 
 echo "Installing files into /etc/skel"
 fcopy -M -i -B -v -r /etc/skel
+if ifclass GRML_FULL ; then
+  # GRML_FULL delivers a few files which need to be executable.
+  $ROOTCMD chmod -R a+rx /etc/skel/.xinitrc /etc/skel/.xsession /etc/skel/.xinitrc.d
+fi
 
 echo "Creating ~/.zshrc"
 touch "$target"/root/.zshrc
