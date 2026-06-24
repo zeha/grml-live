@@ -895,6 +895,10 @@ def _run_tasks(
             if not should_skip_task(dynamic_state, "squashfs"):
                 mksquashfs(grml_cd_dir, chroot_dir, grml_name, unshared_service)
                 create_on_media_md5sums(grml_cd_dir, grml_name, unshared_service)
+                epoch = os.getenv("SOURCE_DATE_EPOCH")
+                if epoch:
+                    print(f"I: Clamping mtimes to {epoch}")
+                    unshared_service.run(unshared_helper.clamp_to_source_date(grml_cd_dir, epoch))
 
     finally:
         copy_directory_out(grml_logs_dir / "fai", chroot_directories.log_dir)
