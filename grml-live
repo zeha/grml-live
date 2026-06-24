@@ -873,11 +873,6 @@ if [ -n "$SKIP_MKISOFS" ] ; then
 else
    mkdir -p "$ISO_OUTPUT" || bailout 6 "Problem with creating $ISO_OUTPUT for stage 'iso build'"
 
-   # create md5sum file
-   # shellcheck disable=SC2094 # find execution ignores written file
-   ( cd "$BUILD_OUTPUT"/GRML/"${GRML_NAME}" &&
-   find ../.. -type f -not -name md5sums -exec md5sum {} \; > md5sums )
-
    log   "Generating build information in conf/buildinfo.json"
    einfo "Generating build information in conf/buildinfo.json"
    mkdir -p "$BUILD_OUTPUT"/conf/

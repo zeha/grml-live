@@ -775,6 +775,30 @@ def mksquashfs(
     run_x(args, check=True, unshared=True, stdin=subprocess.DEVNULL)
 
 
+def create_on_media_md5sums(
+    grml_cd_dir: Path,
+    grml_name: str,
+    unshared_service: UnsharedService,
+):
+    print("I: preparing md5sums file")
+
+    grml_dir = grml_cd_dir / "GRML"
+    named_grml_dir = grml_dir / grml_name
+    md5sums_file = named_grml_dir / "md5sums"
+
+    # FIXME: build sorted list of files and md5sum them
+    #   ( cd "$BUILD_OUTPUT"/GRML/"${GRML_NAME}" &&
+    # find ../.. -type f -not -name md5sums -exec md5sum {} \; > md5sums )
+    unshared_service.batch(
+        [
+            unshared_helper.ensure_dir(grml_dir),
+            unshared_helper.ensure_dir(named_grml_dir),
+            unshared_helper.write_file_text(md5sums_file, "TODO\n"),
+        ]
+    )
+    run_x(["/bin/ls", "-la", md5sums_file])
+
+
 def _run_tasks(
     conf_dir: Path,
     output_dir: Path,
@@ -870,6 +894,7 @@ def _run_tasks(
 
             if not should_skip_task(dynamic_state, "squashfs"):
                 mksquashfs(grml_cd_dir, chroot_dir, grml_name, unshared_service)
+                create_on_media_md5sums(grml_cd_dir, grml_name, unshared_service)
 
     finally:
         copy_directory_out(grml_logs_dir / "fai", chroot_directories.log_dir)
