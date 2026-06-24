@@ -726,6 +726,55 @@ def cleanup_dyld_cache(
     )
 
 
+def _build_mksquashfs_options(env: dict[str, str]) -> list[str]:
+    options = env.get("SQUASHFS_OPTIONS", "").split()
+    if not options:
+        # use block size 1m as this gives good result with regards to time + compression
+        options += ["-b", "1m"]
+
+        # set lzma/xz compression by default, unless -z option has been specified on grml-live command line
+        squashfs_zlib = env.get("SQUASHFS_ZLIB")
+        options += ["-comp", "gzip" if squashfs_zlib else "xz"]
+
+    options += ["-noappend"]
+
+    # Ignore all extended attributes. This avoids:
+    # 1) leaking containerization supplied selinux attributes into the squashfs,
+    # 2) prevents unpacking errors in a later build-only step in containers not supporting xattrs.
+    options += ["-no-xattrs"]
+
+    # support exclusion of files via exclude-file
+    squashfs_excludes_file = env.get("SQUASHFS_EXCLUDES_FILE")
+    if squashfs_excludes_file and os.access(squashfs_excludes_file, os.R_OK):
+        options += ["-wildcards", "-ef", squashfs_excludes_file]
+
+    return options
+
+
+def mksquashfs(
+    grml_cd_dir: Path,
+    chroot_dir: Path,
+    grml_name: str,
+    unshared_service: UnsharedService,
+):
+    live_dir = grml_cd_dir / "live"
+    squashfs_dir = live_dir / grml_name
+    squashfs_file = squashfs_dir / f"{grml_name}.squashfs"
+
+    unshared_service.batch(
+        [
+            unshared_helper.ensure_dir(live_dir),
+            unshared_helper.ensure_dir(squashfs_dir),
+        ]
+    )
+
+    mksquashfs_binary = os.environ["MKSQUASHFS_BINARY"]
+    options = _build_mksquashfs_options(dict(os.environ))
+    args = [mksquashfs_binary, str(chroot_dir) + "/", squashfs_file, *options]
+
+    run_x(args, check=True, unshared=True, stdin=subprocess.DEVNULL)
+
+
 def _run_tasks(
     conf_dir: Path,
     output_dir: Path,
@@ -758,6 +807,9 @@ def _run_tasks(
             grml_live_config_chroot, "\n".join(f"{k}={shlex.quote(v)}" for k, v in grml_live_config.items())
         )
     )
+
+    grml_name = os.environ["GRML_NAME"]
+    print(f"I: GRML_NAME: {grml_name!r}")
 
     do_skiptask(dynamic_state, skip_tasks)
 
@@ -815,6 +867,9 @@ def _run_tasks(
                         grml_cd_dir,
                     ],
                 )
+
+            if not should_skip_task(dynamic_state, "squashfs"):
+                mksquashfs(grml_cd_dir, chroot_dir, grml_name, unshared_service)
 
     finally:
         copy_directory_out(grml_logs_dir / "fai", chroot_directories.log_dir)
