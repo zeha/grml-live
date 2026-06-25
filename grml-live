@@ -752,6 +752,7 @@ fi
 
 # minifai needs to see these
 export GRML_NAME
+export ISO_NAME
 export MKSQUASHFS_BINARY
 export SQUASHFS_EXCLUDES_FILE
 export SQUASHFS_OPTIONS
